@@ -140,19 +140,15 @@ class Game:
     def display_board(self):
         print("\n  0 1 2 3 4")
         for i, row in enumerate(self.board):
-            print(i, end=' ')
+            print(i, end=" ")
             for cell in row:
-                if cell is None:
-                    print(".", end=" ")
-                else:
-                    print(f"{cell.player}-{cell.name}", end=" ")
+                print(cell.name if cell else '.', end=" ")
             print()
+        print()
 
     def start_new_game(self):
-        self.__init__()
+        self.__init__()  # Reinitialize the game
 
-
-# Example game setup and flow
 if __name__ == "__main__":
     game = Game()
     game.setup('A')

@@ -1,171 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5x5 Chess Game</title>
+    <title>Game Board</title>
     <style>
-        table {
-            border-collapse: collapse;
-            margin: 20px auto;
+        body {
+            font-family: Arial, sans-serif;
         }
 
-        td {
-            width: 50px;
-            height: 50px;
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 10px;
+        }
+
+        .cell {
+            background-color: #ccc;
+            padding: 20px;
+            border: 1px solid #333;
             text-align: center;
-            vertical-align: middle;
-            border: 1px solid #000;
         }
 
-        .A {
-            background-color: #FFD700;
+        .cell:hover {
+            background-color: #aaa;
         }
 
-        .B {
-            background-color: #ADD8E6;
+        .piece {
+            background-color: #666;
+            color: #fff;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: move;
+            display: inline-block;
         }
 
-        .draggable {
-            cursor: grab;
+        .piece:hover {
+            background-color: #888;
+        }
+
+        #drag-drop-area,
+        #drag-drop-area-b {
+            margin-top: 20px;
+        }
+
+        #move-history {
+            margin-top: 20px;
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            text-align: center;
+            padding-top: 20%;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <h1>5x5 Chess Game</h1>
-    <div id="game-status"></div>
-    <table id="chess-board">
-        <tbody>
-            <script>
-                for (let i = 0; i < 5; i++) {
-                    document.write("<tr>");
-                    for (let j = 0; j < 5; j++) {
-                        document.write(`<td id="cell-${i}-${j}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`);
-                    }
-                    document.write("</tr>");
-                }
-            </script>
-        </tbody>
-    </table>
+    <h1 id="current-turn">Player A's Turn</h1>
+    <div id="game-board">
+        <div class="cell" id="cell-0-0"></div>
+        <div class="cell" id="cell-0-1"></div>
+        <div class="cell" id="cell-0-2"></div>
+        <div class="cell" id="cell-0-3"></div>
+        <div class="cell" id="cell-0-4"></div>
 
-    <div id="pieces">
-        <h3>Player A</h3>
-        <div id="A-P1" class="draggable A" draggable="true" ondragstart="drag(event)">A-P1</div>
-        <div id="A-P2" class="draggable A" draggable="true" ondragstart="drag(event)">A-P2</div>
-        <div id="A-P3" class="draggable A" draggable="true" ondragstart="drag(event)">A-P3</div>
-        <div id="A-H1" class="draggable A" draggable="true" ondragstart="drag(event)">A-H1</div>
-        <div id="A-H2" class="draggable A" draggable="true" ondragstart="drag(event)">A-H2</div>
+        <div class="cell" id="cell-1-0"></div>
+        <div class="cell" id="cell-1-1"></div>
+        <div class="cell" id="cell-1-2"></div>
+        <div class="cell" id="cell-1-3"></div>
+        <div class="cell" id="cell-1-4"></div>
 
-        <h3>Player B</h3>
-        <div id="B-P1" class="draggable B" draggable="true" ondragstart="drag(event)">B-P1</div>
-        <div id="B-P2" class="draggable B" draggable="true" ondragstart="drag(event)">B-P2</div>
-        <div id="B-P3" class="draggable B" draggable="true" ondragstart="drag(event)">B-P3</div>
-        <div id="B-H1" class="draggable B" draggable="true" ondragstart="drag(event)">B-H1</div>
-        <div id="B-H2" class="draggable B" draggable="true" ondragstart="drag(event)">B-H2</div>
+        <div class="cell" id="cell-2-0"></div>
+        <div class="cell" id="cell-2-1"></div>
+        <div class="cell" id="cell-2-2"></div>
+        <div class="cell" id="cell-2-3"></div>
+        <div class="cell" id="cell-2-4"></div>
+
+        <div class="cell" id="cell-3-0"></div>
+        <div class="cell" id="cell-3-1"></div>
+        <div class="cell" id="cell-3-2"></div>
+        <div class="cell" id="cell-3-3"></div>
+        <div class="cell" id="cell-3-4"></div>
+
+        <div class="cell" id="cell-4-0"></div>
+        <div class="cell" id="cell-4-1"></div>
+        <div class="cell" id="cell-4-2"></div>
+        <div class="cell" id="cell-4-3"></div>
+        <div class="cell" id="cell-4-4"></div>
     </div>
 
-    <button onclick="submitSetup()">Submit Setup</button>
-    <div id="controls">
-        <input type="text" id="move-input" placeholder="Enter move (e.g., P1:F)">
-        <button onclick="makeMove()">Make Move</button>
+    <div id="move-history">
+        <h2>Move History:</h2>
+        <ul id="move-list"></ul>
+    </div>
+
+    <div id="game-over">
+        <h1 id="game-over-message"></h1>
+        <button id="new-game-button">Start New Game</button>
+    </div>
+
+    <!-- Player A's Pieces -->
+    <div id="drag-drop-area">
+        <h2>Player A's Pieces:</h2>
+        <div class="piece" id="A-P1" draggable="true">A-P1</div>
+        <div class="piece" id="A-P2" draggable="true">A-P2</div>
+        <div class="piece" id="A-P3" draggable="true">A-P3</div>
+        <div class="piece" id="A-H1" draggable="true">A-H1</div>
+        <div class="piece" id="A-H2" draggable="true">A-H2</div>
+        <button id="submit-lineup-button">Submit Lineup</button>
+    </div>
+
+    <!-- Player B's Pieces (Initially Hidden) -->
+    <div id="drag-drop-area-b" class="hidden">
+        <h2>Player B's Pieces:</h2>
+        <div class="piece" id="B-P1" draggable="true">B-P1</div>
+        <div class="piece" id="B-P2" draggable="true">B-P2</div>
+        <div class="piece" id="B-P3" draggable="true">B-P3</div>
+        <div class="piece" id="B-H1" draggable="true">B-H1</div>
+        <div class="piece" id="B-H2" draggable="true">B-H2</div>
+        <button id="submit-lineup-button-b">Submit Lineup</button>
     </div>
 
     <script>
-        let player = 'A';  // Start with player A for setup
+        const cells = document.querySelectorAll('.cell');
+        const submitLineupButton = document.getElementById('submit-lineup-button');
+        const submitLineupButtonB = document.getElementById('submit-lineup-button-b');
+        const currentTurnElement = document.getElementById('current-turn');
 
-        function allowDrop(ev) {
-            ev.preventDefault();
+        let currentPlayer = 'A';
+        let piecesInLineup = [];
+
+        function handleDragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.id);
         }
 
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
-        }
+        function handleDrop(event) {
+            event.preventDefault();
+            const pieceId = event.dataTransfer.getData('text/plain');
+            const piece = document.getElementById(pieceId);
 
-        function drop(ev) {
-            ev.preventDefault();
-            let data = ev.dataTransfer.getData("text");
-            let targetCell = ev.target;
-            targetCell.innerText = data;
-            targetCell.className = data.split('-')[0];
-            targetCell.setAttribute('data-piece', data);
-            document.getElementById(data).style.display = "none";
-        }
-
-        function submitSetup() {
-            let positions = [];
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 5; j++) {
-                    let cell = document.getElementById(`cell-${i}-${j}`);
-                    let piece = cell.getAttribute('data-piece');
-                    if (piece) {
-                        positions.push({
-                            name: piece.split('-')[1],
-                            type: piece.includes('H1') ? 'Hero1' : piece.includes('H2') ? 'Hero2' : 'Pawn',
-                            position: [i, j]
-                        });
-                    }
+            // If the piece is not already placed, place it in the cell
+            if (!piecesInLineup.includes(pieceId)) {
+                // Clear the previous cell if the piece was already placed
+                const previousCell = piece.parentElement;
+                if (previousCell && previousCell.classList.contains('cell')) {
+                    previousCell.innerHTML = '';
                 }
-            }
 
-            fetch('/setup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player: player, positions: positions })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(`Player ${player} setup complete.`);
-                        player = player === 'A' ? 'B' : 'A';
-                        if (player === 'B') {
-                            document.getElementById('game-status').innerText = "Player B, please set up your pieces.";
-                        } else {
-                            document.getElementById('game-status').innerText = "Setup complete. Player A, make your move.";
-                        }
-                    }
-                });
-        }
-
-        function makeMove() {
-            const move = document.getElementById('move-input').value;
-            const [character, direction] = move.split(':');
-            fetch('/move', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ character, direction })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateBoard(data.board);
-                        if (data.winner) {
-                            document.getElementById('game-status').innerText = `Player ${data.winner} wins!`;
-                        } else {
-                            document.getElementById('game-status').innerText = "Next player's turn.";
-                        }
-                    } else {
-                        alert(data.error);
-                    }
-                });
-        }
-
-        function updateBoard(board) {
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 5; j++) {
-                    let cell = document.getElementById(`cell-${i}-${j}`);
-                    let piece = board[i][j];
-                    if (piece) {
-                        cell.innerText = `${piece.player}-${piece.name}`;
-                        cell.className = piece.player;
-                    } else {
-                        cell.innerText = '';
-                        cell.className = '';
-                    }
-                }
+                event.target.appendChild(piece);
+                piecesInLineup.push(pieceId);
             }
         }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+
+        // Add drag and drop functionality to pieces and cells
+        function addDragDropListeners(pieces, cells) {
+            pieces.forEach(piece => piece.addEventListener('dragstart', handleDragStart));
+            cells.forEach(cell => {
+                cell.addEventListener('dragover', handleDragOver);
+                cell.addEventListener('drop', handleDrop);
+            });
+        }
+
+        // Apply listeners for Player A's pieces
+        addDragDropListeners(document.querySelectorAll('#drag-drop-area .piece'), cells);
+
+        submitLineupButton.addEventListener('click', () => {
+            if (piecesInLineup.length === 5) {
+                currentPlayer = 'B';
+                piecesInLineup = [];
+                document.getElementById('drag-drop-area').classList.add('hidden');
+                document.getElementById('drag-drop-area-b').classList.remove('hidden');
+                currentTurnElement.textContent = "Player B's Turn";
+
+                // Apply listeners for Player B's pieces
+                addDragDropListeners(document.querySelectorAll('#drag-drop-area-b .piece'), cells);
+            } else {
+                alert('Please select 5 pieces for your lineup');
+            }
+        });
+
+        submitLineupButtonB.addEventListener('click', () => {
+            if (piecesInLineup.length === 5) {
+                // Proceed to game start or other logic
+                currentTurnElement.textContent = "Game Starts! Player A's Turn";
+                document.getElementById('drag-drop-area-b').classList.add('hidden');
+            } else {
+                alert('Please select 5 pieces for your lineup');
+            }
+        });
     </script>
 </body>
 
