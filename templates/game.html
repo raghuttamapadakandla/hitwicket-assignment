@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5x5 Chess Game</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+
+        td {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #000;
+        }
+
+        .A {
+            background-color: #FFD700;
+        }
+
+        .B {
+            background-color: #ADD8E6;
+        }
+
+        .draggable {
+            cursor: grab;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>5x5 Chess Game</h1>
+    <div id="game-status"></div>
+    <table id="chess-board">
+        <tbody>
+            <script>
+                for (let i = 0; i < 5; i++) {
+                    document.write("<tr>");
+                    for (let j = 0; j < 5; j++) {
+                        document.write(`<td id="cell-${i}-${j}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`);
+                    }
+                    document.write("</tr>");
+                }
+            </script>
+        </tbody>
+    </table>
+
+    <div id="pieces">
+        <h3>Player A</h3>
+        <div id="A-P1" class="draggable A" draggable="true" ondragstart="drag(event)">A-P1</div>
+        <div id="A-P2" class="draggable A" draggable="true" ondragstart="drag(event)">A-P2</div>
+        <div id="A-P3" class="draggable A" draggable="true" ondragstart="drag(event)">A-P3</div>
+        <div id="A-H1" class="draggable A" draggable="true" ondragstart="drag(event)">A-H1</div>
+        <div id="A-H2" class="draggable A" draggable="true" ondragstart="drag(event)">A-H2</div>
+
+        <h3>Player B</h3>
+        <div id="B-P1" class="draggable B" draggable="true" ondragstart="drag(event)">B-P1</div>
+        <div id="B-P2" class="draggable B" draggable="true" ondragstart="drag(event)">B-P2</div>
+        <div id="B-P3" class="draggable B" draggable="true" ondragstart="drag(event)">B-P3</div>
+        <div id="B-H1" class="draggable B" draggable="true" ondragstart="drag(event)">B-H1</div>
+        <div id="B-H2" class="draggable B" draggable="true" ondragstart="drag(event)">B-H2</div>
+    </div>
+
+    <button onclick="submitSetup()">Submit Setup</button>
+    <div id="controls">
+        <input type="text" id="move-input" placeholder="Enter move (e.g., P1:F)">
+        <button onclick="makeMove()">Make Move</button>
+    </div>
+
+    <script>
+        let player = 'A';  // Start with player A for setup
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            let data = ev.dataTransfer.getData("text");
+            let targetCell = ev.target;
+            targetCell.innerText = data;
+            targetCell.className = data.split('-')[0];
+            targetCell.setAttribute('data-piece', data);
+            document.getElementById(data).style.display = "none";
+        }
+
+        function submitSetup() {
+            let positions = [];
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    let cell = document.getElementById(`cell-${i}-${j}`);
+                    let piece = cell.getAttribute('data-piece');
+                    if (piece) {
+                        positions.push({
+                            name: piece.split('-')[1],
+                            type: piece.includes('H1') ? 'Hero1' : piece.includes('H2') ? 'Hero2' : 'Pawn',
+                            position: [i, j]
+                        });
+                    }
+                }
+            }
+
+            fetch('/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player: player, positions: positions })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Player ${player} setup complete.`);
+                        player = player === 'A' ? 'B' : 'A';
+                        if (player === 'B') {
+                            document.getElementById('game-status').innerText = "Player B, please set up your pieces.";
+                        } else {
+                            document.getElementById('game-status').innerText = "Setup complete. Player A, make your move.";
+                        }
+                    }
+                });
+        }
+
+        function makeMove() {
+            const move = document.getElementById('move-input').value;
+            const [character, direction] = move.split(':');
+            fetch('/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ character, direction })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateBoard(data.board);
+                        if (data.winner) {
+                            document.getElementById('game-status').innerText = `Player ${data.winner} wins!`;
+                        } else {
+                            document.getElementById('game-status').innerText = "Next player's turn.";
+                        }
+                    } else {
+                        alert(data.error);
+                    }
+                });
+        }
+
+        function updateBoard(board) {
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    let cell = document.getElementById(`cell-${i}-${j}`);
+                    let piece = board[i][j];
+                    if (piece) {
+                        cell.innerText = `${piece.player}-${piece.name}`;
+                        cell.className = piece.player;
+                    } else {
+                        cell.innerText = '';
+                        cell.className = '';
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
