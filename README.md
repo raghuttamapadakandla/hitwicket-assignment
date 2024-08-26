@@ -3,7 +3,24 @@
 ## Overview
 This project is the implementation of a board game using HTML, CSS, and JavaScript. It provides a web-based interface for playing a strategic board game with drag-and-drop functionality for piece placement and WebSocket communication for real-time updates.
 
+## Requirements:
+```
+Python 3.12.5
+```
+
 ## Setup
+### Clone the repository:
+```
+git clone https://github.com/raghuttamapadakandla/hitwicket-assignment.git
+```
+### Navigate to the repository and Setup Virtual Environment
+```
+python -m venv venv
+```
+### Activate the Virtual Environment
+```
+.\venv\Scripts\activate
+```
 ### Install Dependencies:
 ```
 pip install requirements.txt
