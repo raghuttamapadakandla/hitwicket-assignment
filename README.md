@@ -1,4 +1,8 @@
 # Advanced Chess-Like Game
+---
+Name: Raghuttama Padakandla
+Reg. No: 21BCY10170
+
 
 ## Overview
 This project is the implementation of a board game using HTML, CSS, and JavaScript. It provides a web-based interface for playing a strategic board game with drag-and-drop functionality for piece placement and WebSocket communication for real-time updates.
