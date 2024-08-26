@@ -11,7 +11,7 @@ Python 3.12.5
 ## Setup
 ### Clone the repository:
 ```
-git clone https://github.com/raghuttamapadakandla/hitwicket-assignment.git
+git clone https://github.com/raghuttamapadakandla/raghuttama-padakandla-21bcy10170.git
 ```
 ### Navigate to the repository and Setup Virtual Environment
 ```
