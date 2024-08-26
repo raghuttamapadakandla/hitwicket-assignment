@@ -29,12 +29,16 @@
             color: #fff;
             padding: 10px;
             border-radius: 50%;
-            cursor: move;
+            cursor: pointer;
             display: inline-block;
             text-align: center;
             width: 40px;
             height: 40px;
             line-height: 40px;
+        }
+
+        .piece[draggable="true"] {
+            cursor: move;
         }
 
         #drag-drop-area,
@@ -57,6 +61,10 @@
 
         .hidden {
             display: none;
+        }
+
+        .highlight {
+            background: blue;
         }
     </style>
 </head>
@@ -119,11 +127,6 @@
         <button id="submit-lineup-button-b">Submit Lineup</button>
     </div>
 
-    <div id="move-history">
-        <h2>Move History:</h2>
-        <ul id="move-list"></ul>
-    </div>
-
     <div id="game-over">
         <h1 id="game-over-message"></h1>
         <button id="new-game-button">Start New Game</button>
@@ -134,6 +137,36 @@
         <p>Enter Move (e.g., P1:F):</p>
         <input type="text" id="move-input">
         <button id="submit-move-button">Make Move</button>
+    </div>
+
+    <div id="P-piece-moves" class="hidden">
+        <button class="move" id="P-F">F</button>
+        <button class="move" id="P-B">B</button>
+        <button class="move" id="P-L">L</button>
+        <button class="move" id="P-R">R</button>
+    </div>
+
+    <div id="H1-piece-moves" class="hidden">
+        <button class="move" id="H1-F">F</button>
+        <button class="move" id="H1-B">B</button>
+        <button class="move" id="H1-L">L</button>
+        <button class="move" id="H1-R">R</button>
+    </div>
+
+    <div id="H2-piece-moves" class="hidden">
+        <button class="move" id="FL">FL</button>
+        <button class="move" id="BL">BL</button>
+        <button class="move" id="FR">FR</button>
+        <button class="move" id="BR">BR</button>
+    </div>
+
+    <div id="move-history">
+        <h2>Move History:</h2>
+        <ul id="move-list"></ul>
+    </div>
+
+    <div id="default-lineup">
+        <button id="default-setup">Default Setup</button>
     </div>
 
     <script>
@@ -149,6 +182,7 @@
         const moveList = document.getElementById('move-list');
         const gameOverMessage = document.getElementById('game-over-message');
         const gameOverElement = document.getElementById('game-over');
+        const moveButtons = document.querySelectorAll('.move')
 
         let currentPlayer = 'A';
         let piecesInLineup = [];
@@ -163,13 +197,23 @@
             const pieceId = event.dataTransfer.getData('text/plain');
             const piece = document.getElementById(pieceId);
 
-            if (!piecesInLineup.includes(pieceId)) {
-                const previousCell = piece.parentElement;
-                if (previousCell && previousCell.classList.contains('cell')) {
-                    previousCell.innerHTML = '';
+            const previousCellId = piece.parentElement.id;
+            // if (previousCell && previousCell.classList.contains('cell')) {
+            //     previousCell.innerHTML = '';
+            // }
+            const valid = validDrop(event.target.id);
+            if (valid) {
+                const swapRequired = swapCheck(previousCellId, event.target.id);
+                if (swapRequired === "invalid") {
+                    alert("Cannot swap to dock.");
+                } else if (swapRequired === "true") {
+                    swap(pieceId, previousCellId, event.target.id)
+                } else {
+                    event.target.appendChild(piece);
+                    piecesInLineup.push(pieceId);
                 }
-                event.target.appendChild(piece);
-                piecesInLineup.push(pieceId);
+            } else {
+                alert("Invalid position.")
             }
         }
 
@@ -185,6 +229,60 @@
             });
         }
 
+        function validDrop(cell) {
+            if (cell.split('-')[0] !== 'cell') {
+                cell = document.getElementById(cell).parentElement.id;
+            }
+
+            if (currentPlayer === "A") {
+                if (cell.split("-")[1] === '4') {
+                    return true
+                } else {
+                    return false
+                }
+            } else {
+                if (cell.split("-")[1] === '0') {
+                    return true
+                } else {
+                    return false
+                }
+            }
+        }
+
+        function swapCheck(previousCell, newCell) {
+            const prevCellElement = document.getElementById(previousCell);
+
+            if (newCell.split('-')[0] !== 'cell') {
+                newCell = document.getElementById(newCell).parentElement.id;
+            }
+
+            const newCellElement = document.getElementById(newCell);
+
+
+            if (newCellElement.childElementCount > 0) {
+                if (previousCell.split('-')[0] === "drag") return "invalid"
+                return "true"
+            } else {
+                return "false"
+            }
+        }
+
+        function swap(pieceId, prevCellId, newCellId) {
+            const prevCellElement = document.getElementById(prevCellId);
+
+            if (newCellId.split('-')[0] !== 'cell') {
+                newCellId = document.getElementById(newCellId).parentElement.id;
+            }
+
+            const newCellElement = document.getElementById(newCellId);
+
+            const oldPiece = newCellElement.childNodes[0];
+            const newPiece = document.getElementById(pieceId);
+
+            newCellElement.appendChild(newPiece);
+            prevCellElement.appendChild(oldPiece);
+        }
+
         addDragDropListeners(piecesA, cells);
 
         submitLineupButton.addEventListener('click', () => {
@@ -195,6 +293,7 @@
                 document.getElementById('drag-drop-area-b').classList.remove('hidden');
                 currentTurnElement.textContent = "Player B's Turn";
                 addDragDropListeners(piecesB, cells);
+                piecesA.forEach((p) => p.setAttribute("draggable", "false"));
             } else {
                 alert('Please select 5 pieces for your lineup');
             }
@@ -206,6 +305,12 @@
                 currentPlayer = 'A';
                 currentTurnElement.textContent = "Game Starts! Player A's Turn";
                 document.getElementById('drag-drop-area-b').classList.add('hidden');
+                const pieceArrs = ['P1', 'P2', 'P3', 'H1', 'H2'];
+                for (_ of pieceArrs) {
+                    document.getElementById(`A-${_}`).addEventListener('click', (e) => displayMoves(e.target.id))
+                    document.getElementById(`B-${_}`).addEventListener('click', (e) => displayMoves(e.target.id))
+                }
+                piecesB.forEach((p) => p.setAttribute("draggable", "false"));
                 moveInputArea.classList.remove('hidden');
             } else {
                 alert('Please select 5 pieces for your lineup');
@@ -216,7 +321,7 @@
             let newRow = currentRow;
             let newCol = currentCol;
 
-            if (pieceType === 'P') {
+            if (pieceType.charAt(0) === 'P') {
                 const distance = 1;
 
                 switch (direction) {
@@ -228,6 +333,9 @@
                         break;
                     case 'F':
                         newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
+                        break;
+                    case 'B':
+                        newRow = currentPlayer === 'A' ? newRow + distance : newRow - distance;
                         break;
                 }
 
@@ -244,29 +352,15 @@
                     case 'F':
                         newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
                         break;
-                    case 'FR':
-                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
-                        newCol += distance;
-                        break;
-                    case 'FL':
-                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
-                        newCol -= distance;
+                    case 'B':
+                        newRow = currentPlayer === 'A' ? newRow + distance : newRow - distance;
                         break;
                 }
 
             } else if (pieceType === 'H2') {
-                const diagonalDistance = 1;
+                const diagonalDistance = 2;
 
                 switch (direction) {
-                    case 'L':
-                        newCol -= diagonalDistance;
-                        break;
-                    case 'R':
-                        newCol += diagonalDistance;
-                        break;
-                    case 'F':
-                        newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
-                        break;
                     case 'FR':
                         newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
                         newCol += diagonalDistance;
@@ -274,6 +368,14 @@
                     case 'FL':
                         newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
                         newCol -= diagonalDistance;
+                        break;
+                    case 'BR':
+                        newRow = currentPlayer === 'A' ? newRow + diagonalDistance : newRow - diagonalDistance;
+                        newCol += diagonalDistance;
+                        break;
+                    case 'BL':
+                        newRow = currentPlayer === 'A' ? newRow + diagonalDistance : newRow - diagonalDistance;
+                        newCol += diagonalDistance;
                         break;
                 }
             }
@@ -281,17 +383,28 @@
             return [newRow, newCol];
         }
 
-        function makeMove() {
-            const moveInputValue = moveInput.value.trim();
-            const [piece, move] = moveInputValue.split(':');
+        moveButtons.forEach((b) => b.addEventListener("click", (e) => {
+            const selectedPiece = document.querySelector(".highlight").id.split('-')[1];
+            const requiredMove = e.target.innerText;
 
+            makeMove(selectedPiece, requiredMove);
+        }))
+
+        function makeMove(piece, move) {
             const pieceElement = document.getElementById(`${currentPlayer}-${piece}`);
             const currentCell = pieceElement.parentElement;
             const [currentRow, currentCol] = currentCell.id.split('-').slice(1).map(Number);
 
-            const [newRow, newCol] = calculateNewPosition(piece.charAt(0), currentRow, currentCol, move);
+            console.log("Current row: ", currentRow);
+            console.log("Current col: ", currentCol);
 
-            if (newRow < 0 || newRow >= 5 || newCol < 0 || newCol >= 5) {
+            const [newRow, newCol] = calculateNewPosition(piece, currentRow, currentCol, move);
+
+            console.log("New row: ", newRow);
+            console.log("New col: ", newCol);
+
+            if (newRow < 0 || newRow > 4 || newCol < 0 || newCol > 4) {
+                console.log("HERE");
                 alert('Invalid move. Out of bounds.');
                 return;
             }
@@ -299,6 +412,8 @@
             const targetCell = document.getElementById(`cell-${newRow}-${newCol}`);
             if (targetCell.innerHTML !== '') {
                 const targetPiece = targetCell.firstElementChild;
+                console.log("Target Cell: ", targetCell);
+                console.log("Target Piece: ", targetPiece);
                 if (targetPiece.id.startsWith(currentPlayer)) {
                     alert('Invalid move. Cannot attack your own piece.');
                     return;
@@ -310,6 +425,8 @@
             targetCell.appendChild(pieceElement);
             moveList.innerHTML += `<li>${currentPlayer}-${piece} moved ${move}</li>`;
             moveInput.value = '';
+
+            document.querySelector(".highlight").classList.remove("highlight");
 
             if (checkWinCondition()) {
                 endGame(currentPlayer);
@@ -337,6 +454,69 @@
         document.getElementById('new-game-button').addEventListener('click', () => {
             location.reload();
         });
+
+        function displayMoves(pId) {
+            if (currentPlayer.toLocaleLowerCase() === pId.split('-')[0].toLocaleLowerCase()) {
+                document.querySelectorAll('div.piece').forEach((p) => p.classList.remove('highlight'));
+                document.getElementById(pId).classList.add('highlight');
+            } else {
+                alert("Not your piece.")
+                return
+            }
+            pId = pId.split('-')[1]
+            if (pId.charAt(0) === 'P') {
+                document.getElementById('P-piece-moves').classList.remove('hidden');
+                document.getElementById('H1-piece-moves').classList.add('hidden');
+                document.getElementById('H2-piece-moves').classList.add('hidden');
+            }
+
+            if (pId === 'H1') {
+                document.getElementById('P-piece-moves').classList.add('hidden');
+                document.getElementById('H1-piece-moves').classList.remove('hidden');
+                document.getElementById('H2-piece-moves').classList.add('hidden');
+            }
+
+            if (pId === 'H2') {
+                document.getElementById('P-piece-moves').classList.add('hidden');
+                document.getElementById('H1-piece-moves').classList.add('hidden');
+                document.getElementById('H2-piece-moves').classList.remove('hidden');
+            }
+        }
+
+        function defaultLineup() {
+            const lineupA = {
+                "A-P1": "cell-4-0",
+                "A-P2": "cell-4-1",
+                "A-P3": "cell-4-2",
+                "A-H1": "cell-4-3",
+                "A-H2": "cell-4-4",
+            }
+
+            for (pId in lineupA) {
+                document.getElementById(lineupA[pId]).appendChild(document.getElementById(pId));
+                piecesInLineup.push(pId);
+            }
+
+            submitLineupButton.click();
+
+            const lineupB = {
+                "B-P1": "cell-0-0",
+                "B-P2": "cell-0-1",
+                "B-P3": "cell-0-2",
+                "B-H1": "cell-0-3",
+                "B-H2": "cell-0-4",
+            }
+
+            for (pId in lineupB) {
+                document.getElementById(lineupB[pId]).appendChild(document.getElementById(pId));
+                piecesInLineup.push(pId);
+            }
+
+            submitLineupButtonB.click();
+            document.getElementById("default-setup").classList.add("hidden");
+        }
+
+        document.getElementById("default-setup").addEventListener("click", defaultLineup);
     </script>
 </body>
 
