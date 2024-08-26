@@ -1,37 +1,3 @@
-const socket = new WebSocket("ws://localhost:8001/");
-
-function waitForOpenSocket(socket) {
-    return new Promise((resolve, _reject) => {
-        while (socket.readyState !== socket.OPEN) { /* no-op */ }
-        return resolve()
-    })
-}
-
-let currentPlayer;
-
-socket.addEventListener("message", ({ data }) => handleMessage(data))
-
-async function sendMessage(socket, msg) {
-    await waitForOpenSocket(socket)
-    socket.send(msg)
-}
-
-function handleMessage(msg) {
-    const message = JSON.parse(msg)
-    switch (message.type) {
-        case "player_assignment":
-            currentPlayer = message.message
-            document.getElementById("current-turn").innerText = "Please select your starting positions. You are player " + currentPlayer
-            break;
-        case "player_move":
-            alert("WRITE THE CODE FOR IT BITCH");
-            // makeMove()
-            break;
-        default:
-            alert("WTF is ", message.type);
-    }
-}
-
 const cells = document.querySelectorAll('.cell');
 const piecesA = document.querySelectorAll('#drag-drop-area .piece');
 const piecesB = document.querySelectorAll('#drag-drop-area-b .piece');
@@ -44,7 +10,8 @@ const submitMoveButton = document.getElementById('submit-move-button');
 const moveList = document.getElementById('move-list');
 const gameOverMessage = document.getElementById('game-over-message');
 const gameOverElement = document.getElementById('game-over');
-const moveButtons = document.querySelectorAll('.move')
+const moveButtons = document.querySelectorAll('.move');
+let currentPlayer = "A";
 const canMakeMove = false
 
 let piecesInLineup = [];
@@ -271,6 +238,7 @@ function makeMove(piece, move) {
     }
 
     targetCell.appendChild(pieceElement);
+    currentPlayer = currentPlayer === "A" ? "B" : "A";
     moveList.innerHTML += `<li>${currentPlayer}-${piece} moved ${move}</li>`;
 
     document.querySelector(".highlight").classList.remove("highlight");
@@ -291,9 +259,6 @@ function checkWinCondition() {
     if (remainingPiecesA.length == 0) return { winCondition: true, winner: "B" }
     else if (remainingPiecesB.length === 0) return { winCondition: true, winner: "A" }
     else return { winCondition: false }
-
-
-    return remainingPiecesA.length === 0 || remainingPiecesB.length === 0;
 }
 
 function endGame(winningPlayer) {
@@ -309,9 +274,9 @@ document.getElementById('new-game-button').addEventListener('click', () => {
 });
 
 function displayMoves(pId) {
-    if (!canMakeMove) {
-        alert("Not your turn please wait.")
-    }
+    // if (!canMakeMove) {
+    //     alert("Not your turn please wait.")
+    // }
     if (currentPlayer.toLocaleLowerCase() === pId.split('-')[0].toLocaleLowerCase()) {
         document.querySelectorAll('div.piece').forEach((p) => p.classList.remove('highlight'));
         document.getElementById(pId).classList.add('highlight');
