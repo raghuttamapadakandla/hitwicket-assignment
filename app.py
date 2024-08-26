@@ -5,7 +5,6 @@ app = Flask(__name__)
 game = Game()
 
 def serialize_board(board):
-    """Convert the board's current state to a JSON-serializable format."""
     return [[str(cell) if cell else "." for cell in row] for row in board]
 
 @app.route('/', methods=['GET'])
@@ -23,12 +22,10 @@ def setup_game():
         character_type = pos['type']
         position = tuple(pos['position'])
 
-        # Create a new character and place it on the board
         new_character = Character(player, name, character_type, position)
         game.board[position[0]][position[1]] = new_character
         game.players[player].append(new_character)
 
-    # Check if Player B should now set up their pieces
     if player == 'A':
         next_player = 'B'
         return jsonify(success=True, next_player=next_player)
@@ -42,13 +39,13 @@ def move():
     character_name = data['character']
     direction = data['direction']
 
-    try:
-        result = game.process_move(game.current_turn, character_name, direction)
-        if result != "valid":
-            return jsonify(success=False, error=result)
-        
+    try:    
+        character = game.get_character_by_name(character_name)
+        character.move(direction, game.board, game.captured)
         serialized_board = serialize_board(game.board)
-        return jsonify(success=True, board=serialized_board, winner=game.get_winner())
+        winner = game.check_winner()
+        return jsonify(success=True, board=serialized_board, winner=winner)
+    
     except ValueError as e:
         return jsonify(success=False, error=str(e))
 

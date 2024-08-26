@@ -12,6 +12,7 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             grid-gap: 10px;
+            margin-bottom: 20px;
         }
 
         .cell {
@@ -19,10 +20,8 @@
             padding: 20px;
             border: 1px solid #333;
             text-align: center;
-        }
-
-        .cell:hover {
-            background-color: #aaa;
+            height: 60px;
+            width: 60px;
         }
 
         .piece {
@@ -32,19 +31,15 @@
             border-radius: 50%;
             cursor: move;
             display: inline-block;
-        }
-
-        .piece:hover {
-            background-color: #888;
+            text-align: center;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
         }
 
         #drag-drop-area,
         #drag-drop-area-b {
-            margin-top: 20px;
-        }
-
-        #move-history {
-            margin-top: 20px;
+            margin-bottom: 20px;
         }
 
         #game-over {
@@ -54,7 +49,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #fff;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
             text-align: center;
             padding-top: 20%;
         }
@@ -67,6 +63,8 @@
 
 <body>
     <h1 id="current-turn">Player A's Turn</h1>
+
+    <!-- Game Board -->
     <div id="game-board">
         <div class="cell" id="cell-0-0"></div>
         <div class="cell" id="cell-0-1"></div>
@@ -99,16 +97,6 @@
         <div class="cell" id="cell-4-4"></div>
     </div>
 
-    <div id="move-history">
-        <h2>Move History:</h2>
-        <ul id="move-list"></ul>
-    </div>
-
-    <div id="game-over">
-        <h1 id="game-over-message"></h1>
-        <button id="new-game-button">Start New Game</button>
-    </div>
-
     <!-- Player A's Pieces -->
     <div id="drag-drop-area">
         <h2>Player A's Pieces:</h2>
@@ -131,14 +119,40 @@
         <button id="submit-lineup-button-b">Submit Lineup</button>
     </div>
 
+    <div id="move-history">
+        <h2>Move History:</h2>
+        <ul id="move-list"></ul>
+    </div>
+
+    <div id="game-over">
+        <h1 id="game-over-message"></h1>
+        <button id="new-game-button">Start New Game</button>
+    </div>
+
+    <!-- Input for entering moves -->
+    <div id="move-input-area" class="hidden">
+        <p>Enter Move (e.g., P1:F):</p>
+        <input type="text" id="move-input">
+        <button id="submit-move-button">Make Move</button>
+    </div>
+
     <script>
         const cells = document.querySelectorAll('.cell');
+        const piecesA = document.querySelectorAll('#drag-drop-area .piece');
+        const piecesB = document.querySelectorAll('#drag-drop-area-b .piece');
         const submitLineupButton = document.getElementById('submit-lineup-button');
         const submitLineupButtonB = document.getElementById('submit-lineup-button-b');
         const currentTurnElement = document.getElementById('current-turn');
+        const moveInputArea = document.getElementById('move-input-area');
+        const moveInput = document.getElementById('move-input');
+        const submitMoveButton = document.getElementById('submit-move-button');
+        const moveList = document.getElementById('move-list');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const gameOverElement = document.getElementById('game-over');
 
         let currentPlayer = 'A';
         let piecesInLineup = [];
+        let gameStarted = false;
 
         function handleDragStart(event) {
             event.dataTransfer.setData('text/plain', event.target.id);
@@ -149,14 +163,11 @@
             const pieceId = event.dataTransfer.getData('text/plain');
             const piece = document.getElementById(pieceId);
 
-            // If the piece is not already placed, place it in the cell
             if (!piecesInLineup.includes(pieceId)) {
-                // Clear the previous cell if the piece was already placed
                 const previousCell = piece.parentElement;
                 if (previousCell && previousCell.classList.contains('cell')) {
                     previousCell.innerHTML = '';
                 }
-
                 event.target.appendChild(piece);
                 piecesInLineup.push(pieceId);
             }
@@ -166,7 +177,6 @@
             event.preventDefault();
         }
 
-        // Add drag and drop functionality to pieces and cells
         function addDragDropListeners(pieces, cells) {
             pieces.forEach(piece => piece.addEventListener('dragstart', handleDragStart));
             cells.forEach(cell => {
@@ -175,8 +185,7 @@
             });
         }
 
-        // Apply listeners for Player A's pieces
-        addDragDropListeners(document.querySelectorAll('#drag-drop-area .piece'), cells);
+        addDragDropListeners(piecesA, cells);
 
         submitLineupButton.addEventListener('click', () => {
             if (piecesInLineup.length === 5) {
@@ -185,9 +194,7 @@
                 document.getElementById('drag-drop-area').classList.add('hidden');
                 document.getElementById('drag-drop-area-b').classList.remove('hidden');
                 currentTurnElement.textContent = "Player B's Turn";
-
-                // Apply listeners for Player B's pieces
-                addDragDropListeners(document.querySelectorAll('#drag-drop-area-b .piece'), cells);
+                addDragDropListeners(piecesB, cells);
             } else {
                 alert('Please select 5 pieces for your lineup');
             }
@@ -195,12 +202,140 @@
 
         submitLineupButtonB.addEventListener('click', () => {
             if (piecesInLineup.length === 5) {
-                // Proceed to game start or other logic
+                gameStarted = true;
+                currentPlayer = 'A';
                 currentTurnElement.textContent = "Game Starts! Player A's Turn";
                 document.getElementById('drag-drop-area-b').classList.add('hidden');
+                moveInputArea.classList.remove('hidden');
             } else {
                 alert('Please select 5 pieces for your lineup');
             }
+        });
+
+        function calculateNewPosition(pieceType, currentRow, currentCol, direction) {
+            let newRow = currentRow;
+            let newCol = currentCol;
+
+            if (pieceType === 'P') {
+                const distance = 1;
+
+                switch (direction) {
+                    case 'L':
+                        newCol -= distance;
+                        break;
+                    case 'R':
+                        newCol += distance;
+                        break;
+                    case 'F':
+                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
+                        break;
+                }
+
+            } else if (pieceType === 'H1') {
+                const distance = 2;  // Fix: H1 should move 2 spaces forward
+
+                switch (direction) {
+                    case 'L':
+                        newCol -= distance;
+                        break;
+                    case 'R':
+                        newCol += distance;
+                        break;
+                    case 'F':
+                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
+                        break;
+                    case 'FR':
+                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
+                        newCol += distance;
+                        break;
+                    case 'FL':
+                        newRow = currentPlayer === 'A' ? newRow - distance : newRow + distance;
+                        newCol -= distance;
+                        break;
+                }
+
+            } else if (pieceType === 'H2') {
+                const diagonalDistance = 1;
+
+                switch (direction) {
+                    case 'L':
+                        newCol -= diagonalDistance;
+                        break;
+                    case 'R':
+                        newCol += diagonalDistance;
+                        break;
+                    case 'F':
+                        newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
+                        break;
+                    case 'FR':
+                        newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
+                        newCol += diagonalDistance;
+                        break;
+                    case 'FL':
+                        newRow = currentPlayer === 'A' ? newRow - diagonalDistance : newRow + diagonalDistance;
+                        newCol -= diagonalDistance;
+                        break;
+                }
+            }
+
+            return [newRow, newCol];
+        }
+
+        function makeMove() {
+            const moveInputValue = moveInput.value.trim();
+            const [piece, move] = moveInputValue.split(':');
+
+            const pieceElement = document.getElementById(`${currentPlayer}-${piece}`);
+            const currentCell = pieceElement.parentElement;
+            const [currentRow, currentCol] = currentCell.id.split('-').slice(1).map(Number);
+
+            const [newRow, newCol] = calculateNewPosition(piece.charAt(0), currentRow, currentCol, move);
+
+            if (newRow < 0 || newRow >= 5 || newCol < 0 || newCol >= 5) {
+                alert('Invalid move. Out of bounds.');
+                return;
+            }
+
+            const targetCell = document.getElementById(`cell-${newRow}-${newCol}`);
+            if (targetCell.innerHTML !== '') {
+                const targetPiece = targetCell.firstElementChild;
+                if (targetPiece.id.startsWith(currentPlayer)) {
+                    alert('Invalid move. Cannot attack your own piece.');
+                    return;
+                } else {
+                    targetCell.removeChild(targetPiece);
+                }
+            }
+
+            targetCell.appendChild(pieceElement);
+            moveList.innerHTML += `<li>${currentPlayer}-${piece} moved ${move}</li>`;
+            moveInput.value = '';
+
+            if (checkWinCondition()) {
+                endGame(currentPlayer);
+            } else {
+                currentPlayer = currentPlayer === 'A' ? 'B' : 'A';
+                currentTurnElement.textContent = `${currentPlayer === 'A' ? 'Player A' : 'Player B'}'s Turn`;
+            }
+        }
+
+        function checkWinCondition() {
+            const remainingPiecesA = Array.from(document.querySelectorAll('.piece')).filter(piece => piece.id.startsWith('A'));
+            const remainingPiecesB = Array.from(document.querySelectorAll('.piece')).filter(piece => piece.id.startsWith('B'));
+
+            return remainingPiecesA.length === 0 || remainingPiecesB.length === 0;
+        }
+
+        function endGame(winningPlayer) {
+            moveInputArea.classList.add('hidden');
+            gameOverElement.style.display = 'block';
+            gameOverMessage.textContent = `${winningPlayer === 'A' ? 'Player A' : 'Player B'} Wins!`;
+        }
+
+        submitMoveButton.addEventListener('click', makeMove);
+
+        document.getElementById('new-game-button').addEventListener('click', () => {
+            location.reload();
         });
     </script>
 </body>
